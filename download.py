@@ -4,10 +4,11 @@ import re
 import requests
 import argparse
 import warnings
+import time
 
 
 def _price_to_int(s):
-    return int(re.sub('[$,]', '', s))
+    return int(s.replace('$', '').replace(',', ''))
 
 
 # It turns out Blue Nile's API will only let us grab 1000 diamonds
@@ -20,25 +21,31 @@ def diamonds(params):
     assert params['sortColumn'] == 'price' and params['sortDirection'] == 'asc'
 
     landing_page = requests.get('http://www.bluenile.com/')
-    url = 'http://www.bluenile.com/api/public/diamond-search-grid/v2'
+    url = 'https://www.bluenile.com/api/public/diamond-search-grid/v2'
     result = []
     while True:
         response = requests.get(url, params, cookies=landing_page.cookies)
         d = json.loads(response.text)
         last_page = params['pageSize'] >= d['countRaw']
+        page_results = d['results']
 
-        for i in range(len(d['results'])):
-            d['results'][i]['price'] = _price_to_int(d['results'][i]['price'])
-        max_price = d['results'][-1]['price']
-        min_price = d['results'][0]['price']
+        for i in range(len(page_results)):
+            for k, v in page_results[i].iteritems():
+                if isinstance(v,(list,)):
+                    page_results[i][k] = v[0]
+                if k == 'price':
+                    page_results[i][k] = _price_to_int(page_results[i][k])
+        max_price = page_results[-1]['price']
+        min_price = page_results[0]['price']
 
         if last_page:
-            result += d['results']
+            result += page_results
             break
         else:
             assert min_price < max_price, 'There are over %d diamonds with these characteristics at this price %d.' % (params['pageSize'], min_price)
-            result += [x for x in d['results'] if x['price'] < max_price]
+            result += [x for x in page_results if x['price'] < max_price]
             params['minPrice'] = max_price
+            time.sleep(180)
     return result
 
 
@@ -48,9 +55,9 @@ def clean(data):
 
     # Clean up the data.
     for col in ['carat', 'depth', 'lxwRatio', 'table']:
-        df[col] = df[col].map(lambda s: s.replace(',', '')).astype(float)
+        df[col] = df[col].map(lambda s: s[0].replace(',', '')).astype(float)
     for col in ['pricePerCarat']:
-        df[col] = df[col].map(_price_to_int)
+       df[col] = df[col].map(_price_to_int)
 
     return df
 
