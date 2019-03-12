@@ -31,7 +31,8 @@ def diamonds(params):
 
         for i in range(len(page_results)):
             for k, v in page_results[i].iteritems():
-                if isinstance(v,(list,)):
+                # most of the values are lists of one item so extract that
+                if isinstance(v,(list,)) and len(v) == 1:
                     page_results[i][k] = v[0]
                 if k == 'price':
                     page_results[i][k] = _price_to_int(page_results[i][k])
