@@ -46,7 +46,7 @@ def diamonds(params):
             assert min_price < max_price, 'There are over %d diamonds with these characteristics at this price %d.' % (params['pageSize'], min_price)
             result += [x for x in page_results if x['price'] < max_price]
             params['minPrice'] = max_price
-            time.sleep(180)
+            time.sleep(120)
     return result
 
 
@@ -59,6 +59,10 @@ def clean(data):
         df[col] = df[col].map(lambda s: s.replace(',', '')).astype(float)
     for col in ['pricePerCarat']:
         df[col] = df[col].map(_price_to_int)
+    for col in ['cut', 'measurements']:
+        df[col] = df[col].map(lambda s: s.get('label', ''))
+    for col in ['detailsPageUrl']:
+        df[col] = df[col].map(lambda s: 'https://www.bluenile.com/%s' % s)
 
     return df
 
