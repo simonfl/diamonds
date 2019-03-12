@@ -57,7 +57,7 @@ def clean(data):
     for col in ['carat', 'depth', 'lxwRatio', 'table']:
         df[col] = df[col].map(lambda s: s[0].replace(',', '')).astype(float)
     for col in ['pricePerCarat']:
-       df[col] = df[col].map(_price_to_int)
+        df[col] = df[col].map(_price_to_int)
 
     return df
 
